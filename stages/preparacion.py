@@ -13,9 +13,12 @@ class PreparacionTrayectorias(EtapaPipeline[list[Experimento], list[Experimento]
     def ejecutar(self, experimentos: list[Experimento], contexto: ContextoPipeline) -> list[Experimento]:
         """Prepara las observaciones y trayectorias de cada experimento."""
         for experimento in experimentos:
-            experimento.observaciones = self._validar_observaciones(experimento.observaciones)
+            observaciones_validas = self._validar_observaciones(experimento.observaciones)
+            organizadas = self._organizar_observaciones(observaciones_validas)
+            experimento.observaciones = observaciones_validas
+            experimento.trayectorias = self._reconstruir_trayectorias(organizadas)
+            print(experimento.nombre, ":", len(experimento.trayectorias), "trayectorias")
         return experimentos
-
 
     def _validar_observaciones(self, observaciones: list[Observacion]) -> list[Observacion]:
         """Valida y retorna las observaciones de un experimento."""
@@ -37,8 +40,25 @@ class PreparacionTrayectorias(EtapaPipeline[list[Experimento], list[Experimento]
 
     def _organizar_observaciones(self, observaciones: list[Observacion]) -> dict[int, list[Observacion]]:
         """Organiza las observaciones por identificador de peatón."""
-        return {}
+        organizadas = {}
+        for observacion in observaciones:
+            id_peaton = observacion.id_peaton
+            if id_peaton not in organizadas:
+                organizadas[id_peaton] = []
+            organizadas[id_peaton].append(observacion)
+        for id_peaton in organizadas:
+            organizadas[id_peaton].sort(key=lambda dato: dato.frame)
+        return organizadas
 
     def _reconstruir_trayectorias(self, organizadas: dict[int, list[Observacion]]) -> list[Trayectoria]:
         """Construye trayectorias desde las observaciones organizadas."""
-        return []
+        cantidad_incompleta = sum([1 for datos in organizadas.values() if len(datos) <= 1])
+        if cantidad_incompleta > 0:
+            print("Trayectorias de una observación ignoradas:", cantidad_incompleta)
+        return [
+            Trayectoria(id_peaton, datos)
+            for id_peaton, datos in organizadas.items()
+            if len(datos) > 1
+        ]
+
+
