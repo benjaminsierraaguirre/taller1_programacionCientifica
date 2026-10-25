@@ -9,8 +9,9 @@ from pipeline.pipeline import Pipeline
 from stages import (
 
     AnalisisIndividual,
+    AnalisisEspacial,
     CargaExperimentos,
-
+    ComparacionExperimentos,
     ExportacionResultados,
     PreparacionTrayectorias,
 )
@@ -52,10 +53,6 @@ def main(argumentos: Sequence[str] | None = None) -> int:
     )
     etapas = [
         CargaExperimentos(),
-        PreparacionTrayectorias(),
-        AnalisisIndividual(),
-        #...
-        ExportacionResultados(),
     ]
     pipeline = Pipeline(etapas)
 
