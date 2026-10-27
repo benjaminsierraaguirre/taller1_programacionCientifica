@@ -61,6 +61,28 @@ class AnalisisIndividual(EtapaPipeline[list[Experimento], list[Experimento]]):
             "porcentaje_detenido": porcentaje_detenido,
         }
 
-    def _detectar_detenciones(self, tramos: list[tuple]) -> list[tuple[int, int]]:
+    def _detectar_detenciones(self, tramos: list[tuple], fps: float) -> list[tuple[int, int]]:
         """Identifica intervalos de detención de una trayectoria."""
-        return []
+        detenciones = []
+        frame_inicio = None
+        frame_final = None
+        estaba_detenido = False
+        for actual, siguiente, velocidad in tramos:
+            if velocidad <= VELOCIDAD_DETENCION_M_S:
+                if not estaba_detenido:
+                    frame_inicio = actual.frame
+                frame_final = siguiente.frame
+                estaba_detenido = True
+            elif estaba_detenido:
+                duracion = (frame_final - frame_inicio) / fps
+                if duracion >= DURACION_MINIMA_DETENCION_S:
+                    detenciones.append((frame_inicio, frame_final))
+                estaba_detenido = False
+        if estaba_detenido:
+            duracion = (frame_final - frame_inicio) / fps
+            if duracion >= DURACION_MINIMA_DETENCION_S:
+                detenciones.append((frame_inicio, frame_final))
+        return detenciones
+
+
+
