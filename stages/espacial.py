@@ -22,6 +22,7 @@ class AnalisisEspacial(EtapaPipeline[list[Experimento], list[Experimento]]):
         for experimento in experimentos:
             experimento.resultados_zonas = self._analizar_zonas(experimento)
             experimento.resultados_colectivos.update(self._calcular_densidad(experimento))
+            experimento.resultados_colectivos.update(self._calcular_flujo(experimento, contexto.fps))
         return experimentos
 
     def _obtener_geometria(self, experimento: Experimento) -> tuple[float, float, float, float, float, float]:
@@ -130,4 +131,44 @@ class AnalisisEspacial(EtapaPipeline[list[Experimento], list[Experimento]]):
 
     def _calcular_flujo(self, experimento: Experimento, fps: float | None) -> dict[str, float]:
         """Cuenta cruces de la línea central en intervalos de un segundo."""
-        return {}
+        if fps is None or fps <= 0:
+            fps = experimento.fps
+        if fps is None or fps <= 0:
+            experimento.flujos = []
+            return {"flujo_medio_personas_s": 0.0, "flujo_maximo_personas_s": 0.0}
+        x_min, x_max, y_min, y_max, largo, ancho = self._obtener_geometria(experimento)
+        frames = [observacion.frame for trayectoria in experimento.trayectorias
+                  for observacion in trayectoria.observaciones]
+        if not frames:
+            experimento.flujos = []
+            return {"flujo_medio_personas_s": 0.0, "flujo_maximo_personas_s": 0.0}
+        primer_frame = min(frames)
+        ultimo_frame = max(frames)
+        cruces_por_intervalo = {}
+        for trayectoria in experimento.trayectorias:
+            observaciones = sorted(trayectoria.observaciones, key=lambda dato: dato.frame)
+            cruces = [
+                (actual, siguiente)
+                for actual, siguiente in zip(observaciones, observaciones[1:])
+                if ((actual.x < LINEA_FLUJO_X_M <= siguiente.x)
+                    or (actual.x > LINEA_FLUJO_X_M >= siguiente.x))
+                and y_min <= actual.y <= y_max and y_min <= siguiente.y <= y_max
+            ]
+            for actual, siguiente in cruces:
+                proporcion = (LINEA_FLUJO_X_M - actual.x) / (siguiente.x - actual.x)
+                y_cruce = actual.y + proporcion * (siguiente.y - actual.y)
+                if y_min <= y_cruce <= y_max:
+                    frame_cruce = actual.frame + proporcion * (siguiente.frame - actual.frame)
+                    segundo = int((frame_cruce - primer_frame) / fps)
+                    cruces_por_intervalo[segundo] = cruces_por_intervalo.get(segundo, 0) + 1
+        duracion = int((ultimo_frame - primer_frame) / fps) + 1
+        valores_flujo = [cruces_por_intervalo.get(segundo, 0) for segundo in range(duracion)]
+        experimento.flujos = [
+            {"intervalo_inicio_s": segundo, "intervalo_fin_s": segundo + 1,
+             "peatones": cantidad, "flujo_personas_s": cantidad / 1.0}
+            for segundo, cantidad in enumerate(valores_flujo)
+        ]
+        return {
+            "flujo_medio_personas_s": sum(valores_flujo) / len(valores_flujo),
+            "flujo_maximo_personas_s": max(valores_flujo, default=0.0),
+        }

@@ -20,3 +20,4 @@ class Experimento:
     parametros: dict[str, object] = field(default_factory=dict)
     resultados_zonas: dict[str, dict[str, float]] = field(default_factory=dict)
     densidades: list[dict[str, float]] = field(default_factory=list)
+    flujos: list[dict[str, float]] = field(default_factory=list)
