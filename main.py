@@ -55,6 +55,7 @@ def main(argumentos: Sequence[str] | None = None) -> int:
         CargaExperimentos(),
         PreparacionTrayectorias(),
         AnalisisIndividual(),
+        AnalisisEspacial(),
     ]
     pipeline = Pipeline(etapas)
 

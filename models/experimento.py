@@ -18,3 +18,5 @@ class Experimento:
     fps: float | None = None
     participantes_reportados: int = 0
     parametros: dict[str, object] = field(default_factory=dict)
+    resultados_zonas: dict[str, dict[str, float]] = field(default_factory=dict)
+    densidades: list[dict[str, float]] = field(default_factory=list)
