@@ -44,3 +44,37 @@ La velocidad máxima conserva el mayor valor observado. También se informa el p
 `resultados_individuales.csv`, `resumen_experimentos.csv`, `resultados_zonas.csv`, `densidad.csv` y `flujo.csv`.
 
 
+
+## Gráficos del informe
+
+Los gráficos se generan a partir de los archivos CSV exportados por el pipeline. Desde la raíz del repositorio, instalar las dependencias de visualización y ejecutar:
+
+```bash
+python3 -m pip install matplotlib numpy pandas
+python3 scripts/figuras.py --results ./results --output ./figuras
+python3 scripts/aporte_ra5.py --results ./results --figuras ./figuras
+```
+
+`figuras.py` produce las figuras 1 a 8 sobre velocidades, eficiencia, detenciones, zonas, densidad y flujo. `aporte_ra5.py` calcula la proporción de trayectorias con al menos una detención y genera la figura 9 para comparar las corridas 05 a 09. Este análisis complementario se basa en los CSV ya calculados y no modifica los resultados del pipeline. Las condiciones de salida de las corridas 08 y 09 cambiaron durante la ejecución, por lo que la comparación no establece causalidad.
+
+Los scripts de figuras están en `scripts/`; si se guardaron en otra ubicación, adaptar las rutas de los comandos.
+
+## Análisis de sensibilidad de detenciones
+
+Después de generar los resultados principales, ejecutar desde la raíz del repositorio:
+
+```bash
+python3 sensibilidad.py
+```
+
+El script vuelve a cargar los datos de `./data` y prueba velocidades umbral de **0,1, 0,2 y 0,3 m/s** y duraciones mínimas de **0,5, 1 y 2 segundos** para las corridas **01, 05, 08 y 09**. Guarda `results/sensibilidad.csv` y contrasta la combinación de **0,2 m/s y 1 segundo** con `results/resultados_individuales.csv`. El criterio base se utiliza en el informe; las alternativas permiten evaluar su sensibilidad.
+
+## Orden recomendado para reproducir el informe
+
+1. Colocar los nueve TXT y el JSON de metadatos en `data/`.
+2. Ejecutar `python3 main.py --input ./data --output ./results`.
+3. Ejecutar `python3 sensibilidad.py`.
+4. Ejecutar los dos scripts de `scripts/` para regenerar las nueve figuras.
+5. Consultar los CSV en `results/` y las imágenes en `figuras/`.
+
+En una prueba reportada por el equipo se ejecutó el pipeline en una máquina local con Arch Linux y Python 3.14.8. Esto no equivale a una ejecución en el servidor institucional.
